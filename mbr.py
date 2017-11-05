@@ -19,7 +19,6 @@ def find_voronoi_for_point(mbr, point):
     """
     Query Point in MBR to find voronoi
     """
-
     # return voronoi name
     return 'R0'
 
