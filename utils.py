@@ -14,8 +14,14 @@ def turn_input_to_in(address, out_dir = 'out/'):
     input_reader.store_processed_input(voronoi_list, out_dir+name+'.in')
 
 
-def main():
-    turn_input_to_in('object/region-5-titik.input')
+def main(directory_in_str):    
+    directory = os.fsencode(directory_in_str)
+
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        
+        if filename.endswith(".input"):
+            turn_input_to_in(directory_in_str+filename)
 
 if __name__ == '__main__':
-    main()
+    main('object/')
