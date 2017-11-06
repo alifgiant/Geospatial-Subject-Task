@@ -10,7 +10,7 @@ def create_mbr(voronoi_list):
     mbr = []
     for voronoi in voronoi_list:
         edges = voronoi.get_outer_point()
-        if 
+        # if 
         pass
     return 0
 

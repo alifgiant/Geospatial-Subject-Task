@@ -36,7 +36,7 @@ def read_input(address='voronoi.input'):
         current_voronoi = get_voronoi(voronoi_list, data[0])
         point = Point(data[1], data[2])
 
-        current_voronoi.points.append(point)
+        current_voronoi.add_point(point)
 
     return voronoi_list
 
@@ -55,11 +55,11 @@ def get_voronoi(voronoi_list, voronoi_name):
     return new_voronoi
 
 
-def store_processed_input(voronoi_list):
+def store_processed_input(voronoi_list, file_address='processed.in'):
     """
     store processing input into json
     """
-    with open('processed.in', 'wb') as output:
+    with open(file_address, 'wb') as output:
         pickle.dump(voronoi_list, output, pickle.HIGHEST_PROTOCOL)
 
 

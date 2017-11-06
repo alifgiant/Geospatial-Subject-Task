@@ -19,7 +19,7 @@ class Edge(object):
         Combine edges end find outer edge
         """
         new_edge = edges[0]  # get first edge
-        for edge in edges:
+        for edge in edges[1]:
             max_top = max([new_edge.top, edge.top])
             new_edge.top = max_top
             min_bottom = min([new_edge.bottom, edge.bottom])
@@ -35,7 +35,10 @@ class Edge(object):
         return "edge {} {} {} {}".format(self.top, self.bottom, self.right, self.left)
 
     def __eq__(self, other):
-        return self.top == other.top and self.bottom == other.bottom and self.right == other.right and self.left == other.left
+        return self.top == other.top \
+                    and self.bottom == other.bottom  \
+                    and self.right == other.right \
+                    and self.left == other.left
 
 
 class Box(object):
@@ -46,7 +49,7 @@ class Box(object):
     def __init__(self):
         self.edge = Edge()
 
-    def __update_edge(self, *new_edge):
+    def _update_edge(self, *new_edge):
         self.edge = Edge.combine_edge(self.edge, new_edge)
 
     def calculate_area(self):
@@ -61,10 +64,10 @@ class Point(Box):
     Class For Point holding their coordinates
     """
     def __init__(self, x, y):
-        Box.__init__()
+        Box.__init__(self)
         self.x = float(x)
         self.y = float(y)
-        Box.__update_edge(self.edge, Edge(self.y, self.y, self.x, self.x))
+        self._update_edge(self.edge, Edge(self.y, self.y, self.x, self.x))
 
     def __str__(self):
         return "position {} {}".format(self.x, self.y)
@@ -77,7 +80,7 @@ class Voronoi(Box):
     """
 
     def __init__(self, name=""):
-        Box.__init__()
+        Box.__init__(self)
         self.name = name
         self.__points = []
 
@@ -87,12 +90,12 @@ class Voronoi(Box):
     def add_point(self, point):
         """Insert a point edge into voronoi"""
         self.__points.append(point)
-        Box.__update_edge(self.edge, point.edge)
+        self._update_edge(self.edge, point.edge)
 
     def add_points(self, points):
         """Insert a points edge into voronoi"""
         self.__points.extend(points)
-        Box.__update_edge(self.edge, [point.edge for point in points])  
+        self._update_edge(self.edge, [point.edge for point in points])
 
 class MBR(Box):
     """
@@ -101,7 +104,7 @@ class MBR(Box):
     MAXIMUM_CONTENT = 4
 
     def __init__(self):
-        Box.__init__()
+        Box.__init__(self)
         self.content = list
 
     def content_size(self):
@@ -121,7 +124,7 @@ class MBR(Box):
         if (self.content_size + 1 < MBR.MAXIMUM_CONTENT):
             self.content.append(voronoi)
             voronoi_edges = voronoi.get_edge()
-            Box.__update_edge(self.edge, voronoi_edges)
+            self._update_edge(self.edge, voronoi_edges)
             return self  # returning current MBR
         
         else:  # splitting mbr into 2
