@@ -1,7 +1,6 @@
 """
 Turn .input to .in
 """
-
 import os
 import input_reader
 

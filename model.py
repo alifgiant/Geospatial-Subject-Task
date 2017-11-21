@@ -2,6 +2,28 @@
 This File Define My Wy to Model The Data
 """
 import unittest
+
+def comb_and_comp(lst, size):
+    """
+    get combination and its complementer
+    function from https://stackoverflow.com/questions/28992042/algorithm-to-return-all-combinations-of-k-out-of-n-as-well-as-corresponding-comp
+    """
+    # no combinations
+    if len(lst) < size:
+        return
+    # trivial 'empty' combination
+    if size == 0 or lst == []:
+        yield [], lst
+    else:
+        first, rest = lst[0], lst[1:]
+        # combinations that contain the first element
+        for in_, out in comb_and_comp(rest, size - 1):
+            yield [first] + in_, out
+        # print('move next generator')
+        # combinations that do not contain the first element
+        for in_, out in comb_and_comp(rest, size):
+            yield in_, [first] + out
+
 class Edge(object):
     """
     Class for outer Points
@@ -46,11 +68,14 @@ class Box(object):
     """
     Implementation Of A Box Region
     """
-
-    def __init__(self):
-        self.edge = Edge()
+    def __init__(self, top=None, bottom=None, right=None, left=None):
+        self.edge = None
+        if top is not None and bottom is not None and right is not None and left is not None:
+            self.edge = Edge(top, bottom, right, left)
 
     def _update_edge(self, *new_edge):
+        if self.edge is None:
+            self.edge = new_edge[0]
         self.edge = Edge.combine_edge(self.edge, new_edge)
 
     def is_inside_box(self, other_box):
@@ -91,7 +116,7 @@ class Voronoi(Box):
         self.__points = []
 
     def __str__(self):
-        return "voronoi {} has {} points".format(self.name, len(self.__points))
+        return "voronoi {} has {} points size {}".format(self.name, len(self.__points), self.calculate_area())
 
     def get_points(self):
         """get poitns generator"""
@@ -129,11 +154,34 @@ class MBR(Box):
     def split_mbr(self):
         """split current mbr into 2"""
         # ready the new container
-        first = MBR()
-        second = MBR()
+        first_mbr = MBR()
+        second_mbr = MBR()
+        
+        content_indexes = list(range(len(self.content)))
+        for max_member_count in range(MBR.MAXIMUM_CONTENT):
+            for first_indexes, second_indexes in comb_and_comp(content_indexes, max_member_count + 1):
+                print('indexes', first_indexes, second_indexes)
+                new_first = MBR()
+                new_second = MBR()
+                new_first.add_list_points_test([self.content[i] for i in first_indexes])
+                new_second.add_list_points_test([self.content[i] for i in second_indexes])
 
-        first.add(self.content[0]) # add first element to the new container
-        return first, second
+                print('new_first', new_first)
+
+                if (first_mbr.content_size() == 0 and second_mbr.content_size() == 0):
+                    first_mbr = new_first
+                    second_mbr = new_second
+                else:
+                    current_best = first_mbr.calculate_area() + second_mbr.calculate_area()
+                    new_best = new_first.calculate_area() + new_second.calculate_area()
+                    if new_best < current_best:
+                        first_mbr = new_first
+                        second_mbr = new_second
+
+                print('current', first_mbr.calculate_area(), second_mbr.calculate_area())
+                print('new', new_first.calculate_area(), new_second.calculate_area())
+
+        return first_mbr, second_mbr
 
     def add(self, voronoi):
         """
@@ -146,10 +194,24 @@ class MBR(Box):
                 self._update_edge(voronoi.get_edge())
                 return self  # returning current MBR
         
-            else:  # splitting mbr into 2    
+            else:  # splitting mbr into 2
                 return self.split_mbr()
         else:
             pass
+    
+    def add_list_points_test(self, points):
+        for point in points:
+            self.content.append(point)
+            self._update_edge(point.edge)
+
+    def __str__(self):
+        print()
+        if self.content_size() > 0:
+            for content in self.content:
+                print('content', content)
+            return ''
+        else:
+            return 'empty content'
         
 
 class TestModel(unittest.TestCase):
@@ -168,23 +230,39 @@ class TestModel(unittest.TestCase):
     def test_split(self):
         """Test case for box model"""
         mbr = MBR()
-        vorono1 = Voronoi()
-        vorono2 = Voronoi()
-        vorono3 = Voronoi()
-        vorono4 = Voronoi()
-        vorono5 = Voronoi()
+        vorono1 = Voronoi('vorono1')
+        vorono2 = Voronoi('vorono2')
+        vorono3 = Voronoi('vorono3')
+        vorono4 = Voronoi('vorono4')
+        vorono5 = Voronoi('vorono5')
 
         vorono1.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
-        # vorono2.add_points([Point(2,3), Point(3,3), Point(3,4), Point(2,4)])
-        # vorono3.add_points([Point(4,6), Point(7,6), Point(7,9), Point(4,9)])
-        # vorono4.add_points([Point(7,7), Point(9,7), Point(9,10), Point(7,10)])
-        # vorono5.add_points([Point(6,1), Point(8,1), Point(8,3), Point(6,3)])
+        vorono2.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
+        vorono3.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
+        # vorono2.add_points(Point(2,3), Point(3,3), Point(3,4), Point(2,4))
+        # vorono3.add_points(Point(4,6), Point(7,6), Point(7,9), Point(4,9))
+        vorono4.add_points(Point(7,7), Point(9,7), Point(9,10), Point(7,10))
+        vorono5.add_points(Point(7,7), Point(9,7), Point(9,10), Point(7,10))
+        # vorono5.add_points(Point(6,1), Point(8,1), Point(8,3), Point(6,3))
 
         mbr.content.append(vorono1)
         mbr.content.append(vorono2)
         mbr.content.append(vorono3)
         mbr.content.append(vorono4)
         mbr.content.append(vorono5)
+
+        print('=======')
+        print('vorono1', vorono1.calculate_area())
+        print('vorono2', vorono2.calculate_area())
+        print('vorono3', vorono3.calculate_area())
+        print('vorono4', vorono4.calculate_area())
+        print('vorono5', vorono5.calculate_area())
+        print('=======')
+
+        first, second = mbr.split_mbr()
+
+        print('first', first)
+        print('second', second)
 
         self.assertEqual(3, 3)
 
