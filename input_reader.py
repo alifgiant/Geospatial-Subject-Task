@@ -31,7 +31,6 @@ def read_input(address='voronoi.input'):
     voronoi_list = []
     for line in file_input:
         data = line.split(',')
-        # print(data, data[0])
 
         current_voronoi = get_voronoi(voronoi_list, data[0])
         point = Point(data[1], data[2])

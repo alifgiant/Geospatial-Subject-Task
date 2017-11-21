@@ -19,15 +19,16 @@ class Edge(object):
         Combine edges end find outer edge
         """
         new_edge = edges[0]  # get first edge
-        for edge in edges[1]:
-            max_top = max([new_edge.top, edge.top])
-            new_edge.top = max_top
-            min_bottom = min([new_edge.bottom, edge.bottom])
-            new_edge.bottom = min_bottom
-            max_right = max([new_edge.right, edge.right])
-            new_edge.right = max_right
-            min_left = min([new_edge.left, edge.left])
-            new_edge.left = min_left
+        if (len(edges) > 1):
+            for edge in edges[1]:           
+                max_top = max([new_edge.top, edge.top])
+                new_edge.top = max_top
+                min_bottom = min([new_edge.bottom, edge.bottom])
+                new_edge.bottom = min_bottom
+                max_right = max([new_edge.right, edge.right])
+                new_edge.right = max_right
+                min_left = min([new_edge.left, edge.left])
+                new_edge.left = min_left
 
         return new_edge
 
@@ -52,6 +53,11 @@ class Box(object):
     def _update_edge(self, *new_edge):
         self.edge = Edge.combine_edge(self.edge, new_edge)
 
+    def is_inside_box(self, other_box):
+        """find out wether other box is inside"""
+        return self.edge.top > other_box.edge.top and self.edge.bottom < other_box.edge.bottom \
+                and self.edge.left < other_box.edge.left and self.edge.right > other_box.edge.right
+
     def calculate_area(self):
         """
         Calculate Area Size
@@ -67,7 +73,7 @@ class Point(Box):
         Box.__init__(self)
         self.x = float(x)
         self.y = float(y)
-        self._update_edge(self.edge, Edge(self.y, self.y, self.x, self.x))
+        self._update_edge(Edge(self.y, self.y, self.x, self.x))
 
     def __str__(self):
         return "position {} {}".format(self.x, self.y)
@@ -87,15 +93,21 @@ class Voronoi(Box):
     def __str__(self):
         return "voronoi {} has {} points".format(self.name, len(self.__points))
 
+    def get_points(self):
+        """get poitns generator"""
+        for point in self.__points:
+            yield point
+
     def add_point(self, point):
         """Insert a point edge into voronoi"""
         self.__points.append(point)
-        self._update_edge(self.edge, point.edge)
+        self._update_edge(point.edge)
 
-    def add_points(self, points):
+    def add_points(self, *points):
         """Insert a points edge into voronoi"""
         self.__points.extend(points)
-        self._update_edge(self.edge, [point.edge for point in points])
+        for point in points:
+            self._update_edge(point.edge)
 
 class MBR(Box):
     """
@@ -103,9 +115,10 @@ class MBR(Box):
     """
     MAXIMUM_CONTENT = 4
 
-    def __init__(self):
+    def __init__(self, is_leaf=True):
         Box.__init__(self)
-        self.content = list
+        self.content = list()
+        self.is_leaf = is_leaf
 
     def content_size(self):
         """
@@ -113,24 +126,31 @@ class MBR(Box):
         """
         return len(self.content)
 
-    def split_mbr(self, first, second):
-        """asdasd"""
-        pass
+    def split_mbr(self):
+        """split current mbr into 2"""
+        # ready the new container
+        first = MBR()
+        second = MBR()
+
+        first.add(self.content[0]) # add first element to the new container
+        return first, second
 
     def add(self, voronoi):
         """
         adding process to MBR
         """
-        if (self.content_size + 1 < MBR.MAXIMUM_CONTENT):
+        if (self.is_leaf):
             self.content.append(voronoi)
-            voronoi_edges = voronoi.get_edge()
-            self._update_edge(self.edge, voronoi_edges)
-            return self  # returning current MBR
+
+            if (self.content_size < MBR.MAXIMUM_CONTENT):
+                self._update_edge(voronoi.get_edge())
+                return self  # returning current MBR
         
-        else:  # splitting mbr into 2
-            first = MBR()
-            second = MBR()
-            return self.split_mbr(first, second)
+            else:  # splitting mbr into 2    
+                return self.split_mbr()
+        else:
+            pass
+        
 
 class TestModel(unittest.TestCase):
     """
@@ -145,9 +165,29 @@ class TestModel(unittest.TestCase):
         edge4 = Edge.combine_edge(edge3)
         self.assertEqual(edge3, edge4)
 
-    def test_box(self):
+    def test_split(self):
         """Test case for box model"""
-        pass
+        mbr = MBR()
+        vorono1 = Voronoi()
+        vorono2 = Voronoi()
+        vorono3 = Voronoi()
+        vorono4 = Voronoi()
+        vorono5 = Voronoi()
+
+        vorono1.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
+        # vorono2.add_points([Point(2,3), Point(3,3), Point(3,4), Point(2,4)])
+        # vorono3.add_points([Point(4,6), Point(7,6), Point(7,9), Point(4,9)])
+        # vorono4.add_points([Point(7,7), Point(9,7), Point(9,10), Point(7,10)])
+        # vorono5.add_points([Point(6,1), Point(8,1), Point(8,3), Point(6,3)])
+
+        mbr.content.append(vorono1)
+        mbr.content.append(vorono2)
+        mbr.content.append(vorono3)
+        mbr.content.append(vorono4)
+        mbr.content.append(vorono5)
+
+        self.assertEqual(3, 3)
 
 if __name__ == '__main__':
     unittest.main()
+    # TestModel().test_split()
