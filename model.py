@@ -1,6 +1,8 @@
 """
 This File Define My Wy to Model The Data
 """
+
+import copy
 import unittest
 
 def comb_and_comp(lst, size):
@@ -19,7 +21,7 @@ def comb_and_comp(lst, size):
         # combinations that contain the first element
         for in_, out in comb_and_comp(rest, size - 1):
             yield [first] + in_, out
-        # print('move next generator')
+        
         # combinations that do not contain the first element
         for in_, out in comb_and_comp(rest, size):
             yield in_, [first] + out
@@ -40,7 +42,7 @@ class Edge(object):
         """
         Combine edges end find outer edge
         """
-        new_edge = edges[0]  # get first edge
+        new_edge = copy.copy(edges[0])  # get first edge copied
         if (len(edges) > 1):
             for edge in edges[1]:           
                 max_top = max([new_edge.top, edge.top])
@@ -87,6 +89,8 @@ class Box(object):
         """
         Calculate Area Size
         """
+        if self.edge is None:
+            return -1
         return abs(self.edge.right - self.edge.left) * abs(self.edge.top - self.edge.bottom)
 
 
@@ -109,7 +113,6 @@ class Voronoi(Box):
     Class For Region (Voronoi) holding an array for points
     Assume as a box area, to target MBR
     """
-
     def __init__(self, name=""):
         Box.__init__(self)
         self.name = name
@@ -157,16 +160,11 @@ class MBR(Box):
         first_mbr = MBR()
         second_mbr = MBR()
         
-        content_indexes = list(range(len(self.content)))
+        content_indexes = list(range(len(self.content)))  # put indexes in new list
         for max_member_count in range(MBR.MAXIMUM_CONTENT):
-            for first_indexes, second_indexes in comb_and_comp(content_indexes, max_member_count + 1):
-                print('indexes', first_indexes, second_indexes)
-                new_first = MBR()
-                new_second = MBR()
-                new_first.add_list_points_test([self.content[i] for i in first_indexes])
-                new_second.add_list_points_test([self.content[i] for i in second_indexes])
-
-                print('new_first', new_first)
+            for first_indexes, second_indexes in comb_and_comp(content_indexes, max_member_count + 1):                
+                new_first = MBR().add_list_points([self.content[i] for i in first_indexes])
+                new_second = MBR().add_list_points([self.content[i] for i in second_indexes])
 
                 if (first_mbr.content_size() == 0 and second_mbr.content_size() == 0):
                     first_mbr = new_first
@@ -174,12 +172,9 @@ class MBR(Box):
                 else:
                     current_best = first_mbr.calculate_area() + second_mbr.calculate_area()
                     new_best = new_first.calculate_area() + new_second.calculate_area()
-                    if new_best < current_best:
+                    if new_best <= current_best:  # ' <= ' take last configuration, cause it divide it bigger
                         first_mbr = new_first
                         second_mbr = new_second
-
-                print('current', first_mbr.calculate_area(), second_mbr.calculate_area())
-                print('new', new_first.calculate_area(), new_second.calculate_area())
 
         return first_mbr, second_mbr
 
@@ -199,17 +194,20 @@ class MBR(Box):
         else:
             pass
     
-    def add_list_points_test(self, points):
-        for point in points:
+    def add_list_points(self, *points):
+        """add poits to content"""
+        temp = points[0] if (len(points) == 1) else points  # if only one, means it's tupple
+        for point in temp:
             self.content.append(point)
             self._update_edge(point.edge)
+        return self
 
     def __str__(self):
-        print()
+        write = ''
         if self.content_size() > 0:
             for content in self.content:
-                print('content', content)
-            return ''
+                write += 'content {}'.format(content)
+            return write
         else:
             return 'empty content'
         
@@ -237,13 +235,13 @@ class TestModel(unittest.TestCase):
         vorono5 = Voronoi('vorono5')
 
         vorono1.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
-        vorono2.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
-        vorono3.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
-        # vorono2.add_points(Point(2,3), Point(3,3), Point(3,4), Point(2,4))
-        # vorono3.add_points(Point(4,6), Point(7,6), Point(7,9), Point(4,9))
+        # vorono2.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
+        # vorono3.add_points(Point(1,1), Point(3,1), Point(3,2), Point(1,2))
+        vorono2.add_points(Point(2,3), Point(3,3), Point(3,4), Point(2,4))
+        vorono3.add_points(Point(4,6), Point(7,6), Point(7,9), Point(4,9))
         vorono4.add_points(Point(7,7), Point(9,7), Point(9,10), Point(7,10))
-        vorono5.add_points(Point(7,7), Point(9,7), Point(9,10), Point(7,10))
-        # vorono5.add_points(Point(6,1), Point(8,1), Point(8,3), Point(6,3))
+        # vorono5.add_points(Point(7,7), Point(9,7), Point(9,10), Point(7,10))
+        vorono5.add_points(Point(6,1), Point(8,1), Point(8,3), Point(6,3))
 
         mbr.content.append(vorono1)
         mbr.content.append(vorono2)
@@ -251,20 +249,10 @@ class TestModel(unittest.TestCase):
         mbr.content.append(vorono4)
         mbr.content.append(vorono5)
 
-        print('=======')
-        print('vorono1', vorono1.calculate_area())
-        print('vorono2', vorono2.calculate_area())
-        print('vorono3', vorono3.calculate_area())
-        print('vorono4', vorono4.calculate_area())
-        print('vorono5', vorono5.calculate_area())
-        print('=======')
-
         first, second = mbr.split_mbr()
 
-        print('first', first)
-        print('second', second)
-
-        self.assertEqual(3, 3)
+        self.assertEqual(first.content_size(), 3)
+        self.assertEqual(second.content_size(), 2)
 
 if __name__ == '__main__':
     unittest.main()
