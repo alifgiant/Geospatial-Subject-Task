@@ -1,5 +1,15 @@
-from model import Voronoi, RTree, comb_and_comp, Point
+from model import Voronoi, RTree, Point
 import unittest
+
+class TestVoronoi(unittest.TestCase):
+    def test_voronoi_creation(self):
+        points = [(1, 1), (3, 1), (3, 3), (1, 3)]
+        voronoi = Voronoi("poly_a", points)
+        self.assertEqual(len(points), len(voronoi.bound.vertices))
+        self.assertEqual(Point(2, 2), voronoi.bound.centroid)
+        self.assertEqual(4, voronoi.bound.area)
+
+
 class TestRTree(unittest.TestCase):
     def test_update_bound(self):
         polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
