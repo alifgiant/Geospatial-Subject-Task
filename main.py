@@ -5,8 +5,36 @@ Main file
 import time
 import pickle
 import os.path
-from model import Point, RTree
+from model import Point, RTree, seq_search
 import input_reader
+
+def build_seq_voronoi(voronoi_file_source, should_build_new=False):
+    """
+    build a linear list of voronoi 
+    """
+    saved_voronoi_path = 'save/pypy_seq.pkl'
+
+    if not should_build_new and os.path.isfile(saved_voronoi_path):
+        print('Loading Voronoi List From File:', saved_voronoi_path)
+        with open(saved_voronoi_path, 'rb') as file_input:
+            all_list = pickle.load(file_input)
+    else:
+        if(not should_build_new):
+            print('=======', 'No saved file found', '=======')
+
+        print('Building Voronoi List From', voronoi_file_source)
+        voronoi_list = input_reader.read_input(voronoi_file_source)
+
+        start_construct = time.time()
+        all_list = list(voronoi_list)            
+        duration = time.time() - start_construct
+        print('List Construction Time (ms):', duration * 1000)
+
+        with open(saved_voronoi_path, 'wb') as file_output:
+            print('Saving List To:', saved_voronoi_path)
+            pickle.dump(all_list, file_output, pickle.HIGHEST_PROTOCOL)
+        
+    return all_list
 
 def build_tree(voronoi_file_source, should_build_new=False):
     """
@@ -32,7 +60,7 @@ def build_tree(voronoi_file_source, should_build_new=False):
             tree.insert(voronoi)
             
         duration = time.time() - start_construct
-        print('Tree Construction Time (ms):', duration)
+        print('Tree Construction Time (ms):', duration * 1000)
 
         with open(saved_tree_path, 'wb') as file_output:
             print('Saving Tree To:', saved_tree_path)
@@ -41,43 +69,39 @@ def build_tree(voronoi_file_source, should_build_new=False):
     return tree
 
 if __name__ == '__main__':
-    FILE_INPUT = 'test/region-4/region-4.input'	
+    # FILE_INPUT = 'test/region-15/region-15.input'	
+    FILE_INPUT = 'object/region-08-titik.input'	
     TREE = build_tree(FILE_INPUT, should_build_new = False)
 
     """
     Input query point
     """
-    QUERY_POINT = Point(465,484)
+    QUERY_POINT = Point(11.8, 10.8)
 
-    # """
-    # R-Tree Search
-
-    # """
-    # startRtree = int(round(time.time() * 1000))
-    # region = tree.search(QUERY_POINT, include_on_edge=True)
-    # if region:
-    #     print ('Region Found:', region)
-    # else:
-    #     print ('Region Not Found')
-
-    # endRtree = int(round(time.time() * 1000))
-    # longRtree = endRtree - startRtree
-    # print ('Waktu Pencarian R-Tree = ', longRtree, 'ms')
+    """
+    R-Tree Search
+    """
+    START_TREE_SEARCH = time.time()
+    RESULT = TREE.search(QUERY_POINT, include_on_edge=True)
+    if RESULT:
+        print ('---Region Found:', RESULT[0])
+        print ('---Depth Found:', RESULT[1])
+    else:
+        print ('Region Not Found')
     
-    # #
-    # #      # query_point = Point([float(data) for data in raw_input('Query Point (x,y): ').split(',')])
-    # #
-    # #
+    DURATION_TREE_SEARCH = time.time() - START_TREE_SEARCH    
+    print ('Waktu Pencarian R-Tree = ', DURATION_TREE_SEARCH * 1000, 'ms')
+        
+    """
+    Sequential Search    
+    """
+    START_SEQ_SEARCH = time.time()    
+    VORONOI_LIST = build_seq_voronoi(FILE_INPUT, should_build_new = False)
+    RESULT_SEQ = seq_search(QUERY_POINT, VORONOI_LIST, include_on_edge=True)
+    if RESULT_SEQ:
+        print ('---Region Found:', RESULT_SEQ)
+    else:
+        print ('Region Not Found')
     
-    # """
-    # Sequential Search
-    
-    # """
-    # startSeq = int(round(time.time()*1000))
-    
-    # response = tree.seq_search(query_point,True, voronoi_list)
-    # print(response)    
-    # endSeq=int(round(time.time()*1000))
-    # longSeq = endSeq - startSeq
-    
-    # print ('Waktu Pencarian Linear = ', longSeq, 'ms')
+    DURATION_SEQ_SEARCH = time.time() - START_SEQ_SEARCH        
+    print ('Waktu Pencarian Linear = ', DURATION_SEQ_SEARCH * 1000, 'ms')

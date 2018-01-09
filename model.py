@@ -21,12 +21,12 @@ class RTree(object):
     """
     RTree definition, indexing using RTree
     """
-    def __init__(self, max_content_size = 4, content = None, is_leaf = True):
+    def __init__(self, max_content_size = 4, content = None, is_leaf = True, parent = None):
         self.max_content_size = max_content_size        
-        self.childs = list()
-
-        self.parent = None
         self.bound = None
+
+        self.childs = list()
+        self.parent = parent
         self.is_leaf = is_leaf
 
         if not content:
@@ -63,177 +63,123 @@ class RTree(object):
     #             #  print("Next Level/Depth")
     #             currentLevel = nextLevel
     #             nextLevel = []
-
-    # def seq_search(self, query_point, include_on_edge, voronoi_list):
-    #     for voronoi in voronoi_list:
-    #         # print(voronoi.name)
-    #         if voronoi.bound.encloses_point(query_point) or (include_on_edge and voronoi.bound.intersection(query_point)):
-    #             return "Region Found :"+voronoi.name
-    #     return 'Region Not Found'
-    
-    def search(self, query_point, include_on_edge = False):
-        stack = []
-        for n in self.childs:
-            print(n)
-            stack.append((n, 0))
-        possible = []
-        while len(stack) != 0:
-            checked, depth = stack.pop(0)
-            if(checked.bound.encloses_point(query_point) or (include_on_edge and checked.bound.intersection(query_point))):
-                if isinstance(checked, RTree) :
-                  for n in checked.childs:
-                      # if isinstance(n,Voronoi):
-                      # print(n.name)
-                      stack.insert(0, (n, depth + 1))
+       
+    def search(self, query_point, include_on_edge = False, current_depth = 0):
+        """
+        Search Tree Using DFS
+        """
+        for child in self.childs:
+            if(child.bound.encloses_point(query_point) or (include_on_edge and child.bound.intersection(query_point))):
+                if isinstance(child, Voronoi):
+                    return child.name, current_depth + 1 # pylint: disable=E1101
                 else:
-                    # print(checked)
-                    possible.append((checked.name, depth))
-        #     for s in stack:
-        #         print(s)
-        #     print("###########")
-        # for v in possible:
-        #     print(v)
-        return possible
+                    result = child.search(query_point, include_on_edge, current_depth + 1)
+                    if result:  # if result none, continue check next child, else it has been CATCH
+                        return result
+        
+        return None
 
     def insert(self, new_inserted):
         """
         Main Process of RTree, node insertion
         """
-        if self.is_leaf and len(self.childs) + 1 < self.max_content_size:
+        if self.is_leaf and len(self.childs) + 1 <= self.max_content_size:
             self.childs.append(new_inserted)
-        if not self.is_leaf:
-            # look for suitable node
-            for child in self.childs:
-                if child.bound.encloses_point(new_inserted) or child.bound.intersection(new_inserted):
-                    child.insert(new_inserted)
-                    break
-        else:  # self in not leaf and adding child will make overflow
-            # try split
-            pass
-    
-    def _find_furthest_2(self):
-        pass
+            self.bound = self.update_bound(self, new_inserted)
 
+        elif not self.is_leaf:
+            # look for suitable node
+            selected_child = self.childs[0]  # default select first child
+            selected_bound_area = RTree.update_bound(selected_child, new_inserted).area
+            
+            for child in self.childs[1:]:
+                bound_area = RTree.update_bound(child, new_inserted).area
+
+                # if area smaller than selected pick it or if area is equals, pick one with lesser child
+                if bound_area < selected_bound_area or \
+                    (bound_area == selected_bound_area and len(child.childs) < len(selected_child.childs)):
+                    selected_child = child
+                    selected_bound_area = bound_area
+            
+            selected_child.insert(new_inserted)
+
+        else:  # self in not leaf and adding child will make overflow
+            # add it first
+            self.childs.append(new_inserted)
+
+            # then try split
+            first, second = self.split()
+            self.is_leaf = False
+            self.childs = [first, second] # make current trees child to refer new splitted region
+            
+            # then rebound upward
+            self.rebound_upward()           
+    
+    def split(self):
+        """
+        Do Split based on furthest 2, map the rest into new tree
+        """
+        first, second = self.find_furthest_2()
+        new_tree_first = RTree(parent = self)
+        new_tree_first.insert(first)
+
+        new_tree_second = RTree(parent = self)
+        new_tree_second.insert(second)
+
+        for child in self.childs:
+            if child not in [first, second]:
+                if child.bound.centroid.distance(first.bound.centroid) < child.bound.centroid.distance(second.bound.centroid):
+                    new_tree_first.insert(child)
+                else:
+                    new_tree_second.insert(child)
+        return new_tree_first, new_tree_second
+
+    def find_furthest_2(self):
+        """
+        Pick furtest 2 MBR currently holded by tree
+        """
+        selected_first = None
+        selected_second = None
+        selected_distance = None
+
+        for index_first, voronoi_first in enumerate(self.childs[:-1]):
+            for voronoi_second in self.childs[index_first:]:
+                # euclid distance
+                current_distance = voronoi_first.bound.centroid.distance(voronoi_second.bound.centroid)
+
+                if not selected_distance or current_distance > selected_distance:
+                    selected_distance = current_distance
+                    # if selected distance still none, so does selected first and second
+                    selected_first = voronoi_first
+                    selected_second = voronoi_second
+        # return finding
+        return selected_first, selected_second
+                
     def rebound_upward(self):
+        """
+        keep the tree level the same
+        """
         if self.parent is not None:
-            # print 'rebound_upward', self.parent, self.parent.childs
             self.parent.childs.remove(self)
+
             for child in self.childs:
-                self.parent.childs.append(child)            
+                # add self child to parent
+                self.parent.childs.append(child)
+
             if len(self.parent.childs) > self.parent.max_content_size:
                 self.parent.childs = list(self.parent.split())
                 self.parent.rebound_upward()
 
-    def reset(self):
-        currentLevel = []
-        nextLevel = []
-        #print(len(self.childs))
-        for n in self.childs:
-            #print(n)
-            currentLevel.append(n)
-        while len(currentLevel) != 0:
-            x = currentLevel.pop(0)
-            if isinstance(x, RTree):
-                x.isReinsert = False
-                for n in x.childs:
-                    nextLevel.append(n)
-            if (len(currentLevel) == 0):
-                #print("Next Level/Depth")
-                currentLevel = nextLevel
-                nextLevel = []
-
-    def split(self,new_inserted):
-        # ready the new container
-        first_node = None
-        second_node = None
-        objects = [new_inserted] + self.childs
-        bestpairs = (None, None)
-        bestArea = 0
-        for i in range(len(objects)):
-            for j in range(i + 1, len(objects)):
-                polygon = RTree.update_bound(objects[i], objects[j])
-                area = polygon.area
-                if (bestArea == 0 or bestArea < area):
-                    bestpairs = (objects[i], objects[j])
-                    bestArea = area
-        # entry picking
-        ###################
-        # removing non seed entries
-        firstGroup = [bestpairs[0]]
-        secondGroup = [bestpairs[1]]
-        objects.remove(bestpairs[0])
-        objects.remove(bestpairs[1])
-        for entry in objects:
-            d1 = RTree.update_bound(entry, bestpairs[0]).area
-            d2 = RTree.update_bound(entry, bestpairs[1]).area
-            if (d1 <= d2):
-                firstGroup.append(entry)
-            else:
-                secondGroup.append(entry)
-        first_node = RTree(max_content_size=4, content=firstGroup, is_leaf=self.is_leaf)
-        second_node = RTree(max_content_size=4, content=secondGroup, is_leaf=self.is_leaf)
-        #
-        # # put indexes in new list
-        # content_indexes = list(range(len(self.childs)))
-        # for max_member_count in range(self.max_content_size):
-        #     for first_indexes, second_indexes in comb_and_comp(content_indexes, max_member_count + 1):
-        #         new_first = RTree(max_content_size=self.max_content_size,
-        #                                content=[self.childs[i] for i in first_indexes])
-        #         new_second = RTree(max_content_size=self.max_content_size,
-        #                                 content=[self.childs[i] for i in second_indexes])
-        #         new_first.rebound_border()
-        #         new_second.rebound_border()
-        #         if (first_node is None and second_node is None):
-        #             first_node = new_first
-        #             second_node = new_second
-        #
-        #
-        #     else:
-        #             current_best = first_node.bound.area + second_node.bound.area
-        #             new_best = new_first.bound.area + new_second.bound.area
-        #             if new_best <= current_best:  # ' <= ' take last configuration, cause it divide the node with more member
-        #                 first_node = new_first
-        #                 second_node = new_second
-        #
-        # first_node.parent = self
-        # second_node.parent = self
-        #
-        # self.is_leaf = False
-        return first_node, second_node
+            if self.parent:  # make sure parent is not deleted yet
+                self.parent.rebound_border()  # make sure border size is correct            
 
     def rebound_border(self):
+        """
+        Reset border / MBR of a Tree, in case there is a child removed
+        """
         self.bound = None
         for content in self.childs:
             self.bound = RTree.update_bound(self, content)
-
-    @staticmethod
-    def count_overlap_area(first, second):
-        first_xmin, first_ymin, first_xmax, first_ymax = first.bound.bounds
-        second_xmin, second_ymin, second_xmax, second_ymax = second.bound.bounds
-        return (max(0, min(first_xmax, second_xmax)) - max(first_xmin, second_xmin)) * \
-                (max(0, min(first_ymax, second_ymax)) - max(first_ymin, second_ymin))
-
-    @staticmethod
-    def choose_leaf(node, new_inserted):
-        if node.is_leaf:
-            return node
-        else:
-            choosed = None
-            choosed_expanded_size = 0
-            choosed_total_overlap = 0
-            for i, child in enumerate(node.childs):
-                expanded_size = RTree.update_bound(child, new_inserted).area
-                total_overlap = 0
-                for j, other_child in enumerate(node.childs[:i] + node.childs[i+1:]):
-                    overlap = RTree.count_overlap_area(child, other_child)                    
-                    total_overlap += overlap
-                if choosed is None or \
-                    choosed_total_overlap > total_overlap or \
-                    (choosed_total_overlap == total_overlap and choosed_expanded_size > expanded_size):
-                    choosed = child
-                    choosed_expanded_size = expanded_size
-                    choosed_total_overlap = total_overlap
-            return RTree.choose_leaf(choosed, new_inserted)
     
     @staticmethod
     def update_bound(current, other):
@@ -247,3 +193,13 @@ class RTree(object):
             current_xmax = other_xmax if other_xmax > current_xmax else current_xmax
             current_ymax = other_ymax if other_ymax > current_ymax else current_ymax
             return Polygon((current_xmin, current_ymin), (current_xmax, current_ymin), (current_xmax, current_ymax), (current_xmin, current_ymax))
+
+
+def seq_search(query_point, voronoi_list, include_on_edge=False):
+    """
+    Do Seq Search To List
+    """
+    for voronoi in voronoi_list:
+        if voronoi.bound.encloses_point(query_point) or (include_on_edge and voronoi.bound.intersection(query_point)):
+            return voronoi.name
+    return None

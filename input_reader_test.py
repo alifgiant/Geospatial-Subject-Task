@@ -11,7 +11,7 @@ class TestInputReader(unittest.TestCase):
     """
     def test_read_input(self):
         data = read_input("test/region-5/region-5.input")
-        self.assertEqual(len(list(data)), 4)
+        self.assertEqual(len(list(data)), 5)
 
         data = read_input("test/region-15/region-15.input")
         self.assertEqual(len(list(data)), 15)
