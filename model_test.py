@@ -9,91 +9,158 @@ class TestVoronoi(unittest.TestCase):
         self.assertEqual(Point(2, 2), voronoi.bound.centroid)
         self.assertEqual(4, voronoi.bound.area)
 
-
 class TestRTree(unittest.TestCase):
+    """
+    Test Case for RTree object
+    """
     def test_update_bound(self):
-        polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
-        polygon_b = Voronoi("poly_b", [(6, 7), (6, 3), (12, 3), (12, 7)])
-        polygon_c = Voronoi("poly_c", [(2, 7), (2, 2), (12, 2), (12, 7)])
-        self.assertEqual(polygon_c.bound, RTree.update_bound(polygon_a, polygon_b))        
-
-    def test_overlap(self):
-        polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
-        polygon_b = Voronoi("poly_b", [(6, 7), (6, 3), (12, 3), (12, 7)])
-        self.assertEqual(6, RTree.count_overlap_area(polygon_a, polygon_b))
-
-    def test_choose_leaf(self):
-        polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
-        tree_a = RTree(content = [polygon_a])
-        self.assertEqual(tree_a, RTree.choose_leaf(tree_a, polygon_a))
-
-        polygon_b = Voronoi("poly_b", [(6, 7), (6, 3), (12, 3), (12, 7)])
-        tree_b = RTree(content = [polygon_b])
-
-        tree_all = RTree(content = [tree_a, tree_b])
-        polygon_c = Voronoi("poly_c", [(1, 6), (1, 4), (2, 4), (2, 6)])
-        self.assertEqual(tree_a, RTree.choose_leaf(tree_all, polygon_c))
+        """
+        Make sure update bound work
+        """
+        polygon_a = Voronoi("poly_a", [(1, 4), (1, 1), (3, 1), (3, 4)])
+        polygon_b = Voronoi("poly_b", [(10, 4), (9, 3), (10, 3)])
+        polygon_c = Voronoi("poly_c", [(1, 4), (1, 1), (10, 1), (10, 4)])
+        self.assertEqual(polygon_c.bound, RTree.update_bound(polygon_a, polygon_b))
     
     def test_split(self):
-        polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
-        polygon_b = Voronoi("poly_b", [(2, 2), (2, 1), (8, 1), (9, 2)])
-        polygon_c = Voronoi("poly_c", [(0, 5), (0, 2), (1, 2), (1, 5)])
-        polygon_d = Voronoi("poly_d", [(18, 5), (18, 2), (21, 2), (21, 5)])
-        polygon_e = Voronoi("poly_e", [(18, 8), (18, 6), (23, 6), (23, 8)])
+        """
+        Make sure split into 2 distance nodes, and the splitted refer to correct parent
+        """
+        polygon_a = Voronoi("poly_0", [(1, 4), (1, 3), (3, 3), (3, 4)])
+        polygon_b = Voronoi("poly_1", [(1, 3), (1, 1), (3, 1), (3, 3)])
+        polygon_c = Voronoi("poly_2", [(8, 4), (8, 3), (9, 3), (9, 4)])
+        polygon_d = Voronoi("poly_3", [(9, 4), (9, 3), (10, 4)])
+        polygon_e = Voronoi("poly_4", [(10, 4), (9, 3), (10, 3)])
+
+        root = RTree()
+        root.childs = [polygon_a, polygon_b, polygon_c, polygon_d, polygon_e]    
+        first, second = root.split()
+
+        self.assertEqual(2, len(first.childs))
+        self.assertEqual(3, len(second.childs))
+
+        self.assertEqual(root, first.parent)
+        self.assertEqual(root, second.parent)
+    
+    def test_rebound_upward(self):
+        """
+        Make rebound upward, move current element to its parent
+        """
+        polygon_a = Voronoi("poly_a", [(1, 4), (1, 3), (3, 3), (3, 4)])
+        polygon_b = Voronoi("poly_b", [(1, 3), (1, 1), (3, 1), (3, 3)])
+        polygon_c = Voronoi("poly_c", [(8, 4), (8, 3), (9, 3), (9, 4)])
+        polygon_d = Voronoi("poly_d", [(9, 4), (9, 3), (10, 4)])
+        polygon_e = Voronoi("poly_4", [(10, 4), (9, 3), (10, 3)])
+        
+        grand_child1 = RTree(content = [polygon_a])
+        grand_child2 = RTree(content = [polygon_b])
+        child1 = RTree(content = [grand_child1, grand_child2])
+        child1.is_leaf = False        
+        grand_child1.parent = child1
+        grand_child2.parent = child1
+        
+        child2 = RTree(content = [polygon_c])
+        child3 = RTree(content = [polygon_d])
+        child4 = RTree(content = [polygon_e])
+                
+        root = RTree(content = [child1, child2, child3, child4])
+        root.is_leaf = False
+
+        child1.parent = root
+        child2.parent = root
+        child3.parent = root
+        child4.parent = root
+
+        child1.rebound_upward()
+        
+        self.assertEqual(2, len(root.childs))
+
+    def test_rebound_border(self):         
+        """
+        Make rebound border, recreate MBR
+        """
+        polygon_a = Voronoi("poly_a", [(1, 4), (1, 1), (3, 1), (3, 4)])
+        polygon_b = Voronoi("poly_b", [(10, 4), (9, 3), (10, 3)])
+        polygon_c = Voronoi("poly_c", [(1, 4), (1, 1), (10, 1), (10, 4)])
 
         tree = RTree()
-        tree.childs = [polygon_a, polygon_b, polygon_c, polygon_d, polygon_e]
-        first, second = tree.split()
-
-        self.assertEqual(3, len(first.childs))
-        self.assertEqual(2, len(second.childs))
+        tree.childs = [polygon_a, polygon_b]
+        tree.rebound_border()
     
-    def test_rebound_border(self):
-        polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
-        polygon_b = Voronoi("poly_b", [(2, 2), (2, 1), (8, 1), (9, 2)])
-        polygon_c = Voronoi("poly_c", [(0, 5), (0, 2), (1, 2), (1, 5)])
-
-        tree_a = RTree(content = [polygon_a, polygon_b])
-        tree_b = RTree(content = [tree_a, polygon_c])
-
-        tree_a.parent = tree_b
-        tree_a.rebound_upward()
-
-        self.assertEqual(3, len(tree_b.childs))
+        self.assertEqual(polygon_c.bound, tree.bound)
     
-    def test_insert(self):    
-        polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
-        polygon_b = Voronoi("poly_b", [(2, 2), (2, 1), (8, 1), (9, 2)])
-        polygon_c = Voronoi("poly_c", [(0, 5), (0, 2), (1, 2), (1, 5)])
-        polygon_d = Voronoi("poly_d", [(18, 5), (18, 2), (21, 2), (21, 5)])
-        polygon_e = Voronoi("poly_e", [(18, 8), (18, 6), (23, 6), (23, 8)])
+    def test_insert_in_leaf(self):  
+        """
+        Make sure linear/leaf insert work
+        """
+        polygon_a = Voronoi("poly_a", [(1, 4), (1, 3), (3, 3), (3, 4)])
+        polygon_b = Voronoi("poly_b", [(1, 3), (1, 1), (3, 1), (3, 3)])
+        polygon_c = Voronoi("poly_c", [(8, 4), (8, 3), (9, 3), (9, 4)])
+        polygon_d = Voronoi("poly_d", [(9, 4), (9, 3), (10, 4)])
 
         tree = RTree()
         tree.insert(polygon_a)
-        self.assertEqual(1, len(tree.childs))        
+        self.assertEqual(1, len(tree.childs))
         tree.insert(polygon_b)
         self.assertEqual(2, len(tree.childs))
         tree.insert(polygon_c)
-        self.assertEqual(3, len(tree.childs))        
+        self.assertEqual(3, len(tree.childs))
         tree.insert(polygon_d)
-        self.assertEqual(4, len(tree.childs))        
-        tree.insert(polygon_e)
-        self.assertEqual(2, len(tree.childs))
+        self.assertEqual(4, len(tree.childs))
+    
+    def test_insert_in_2_order(self):
+        """
+        Make sure insert into 2nd order node correct
+        """
+        polygon_a = Voronoi("poly_0", [(1, 4), (1, 3), (3, 3), (3, 4)])
+        polygon_b = Voronoi("poly_1", [(1, 3), (1, 1), (3, 1), (3, 3)])
+        polygon_c = Voronoi("poly_2", [(8, 4), (8, 3), (9, 3), (9, 4)])
+        polygon_d = Voronoi("poly_3", [(9, 4), (9, 3), (10, 4)])
+        polygon_e = Voronoi("poly_4", [(10, 4), (9, 3), (10, 3)])
+
+        child1 = RTree(content = [polygon_a, polygon_b])
+        child2 = RTree(content = [polygon_c, polygon_d])
+        
+        root = RTree(content = [child1, child2])
+        root.is_leaf = False
+
+        root.insert(polygon_e)
+        self.assertNotEqual(3, len(child1.childs))
+        self.assertEqual(3, len(child2.childs))
+    
+    def test_find_furthest_2(self):
+        """
+        Make sure returned 2 furtest region
+        """
+        polygon_a = Voronoi("poly_0", [(1, 4), (1, 3), (3, 3), (3, 4)])
+        polygon_b = Voronoi("poly_1", [(1, 3), (1, 1), (3, 1), (3, 3)])
+        polygon_c = Voronoi("poly_2", [(8, 4), (8, 3), (9, 3), (9, 4)])
+        polygon_d = Voronoi("poly_3", [(9, 4), (9, 3), (10, 4)])
+
+        root = RTree(content = [polygon_a, polygon_b, polygon_c, polygon_d])
+
+        self.assertEqual(polygon_b.bound, root.find_furthest_2()[0].bound)
+        self.assertEqual(polygon_d.bound, root.find_furthest_2()[1].bound)
     
     def test_search(self):
-        polygon_a = Voronoi("poly_a", [(2, 5), (2, 2), (9, 2), (9, 5)])
-        polygon_b = Voronoi("poly_b", [(2, 2), (2, 1), (8, 1), (9, 2)])
-        polygon_c = Voronoi("poly_c", [(0, 5), (0, 2), (1, 2), (1, 5)])
-        polygon_d = Voronoi("poly_d", [(18, 5), (18, 2), (21, 2), (21, 5)])
-        polygon_e = Voronoi("poly_e", [(18, 8), (18, 6), (23, 6), (23, 8)])
+        """
+        Momment of true, search query point
+        """
+        polygon_a = Voronoi("poly_0", [(1, 4), (1, 3), (3, 3), (3, 4)])
+        polygon_b = Voronoi("poly_1", [(1, 3), (1, 1), (3, 1), (3, 3)])
+        polygon_c = Voronoi("poly_2", [(8, 4), (8, 3), (9, 3), (9, 4)])
+        polygon_d = Voronoi("poly_3", [(9, 4), (9, 3), (10, 4)])
+        polygon_e = Voronoi("poly_4", [(10, 4), (9, 3), (10, 3)])
 
-        tree_a = RTree(content = [polygon_a, polygon_b, polygon_c])
-        tree_b = RTree(content = [polygon_d, polygon_e])
+        tree_a = RTree(content = [polygon_a, polygon_b])
+        tree_b = RTree(content = [polygon_c, polygon_d, polygon_e])
 
         tree = RTree(content = [tree_a, tree_b])
-        res = tree.search(Point(19, 2), include_on_edge = True)
-        self.assertEqual('poly_d', res)
+        res = tree.search(Point(2, 1), include_on_edge = True)
+        self.assertEqual(("poly_1", 2), res)
 
+        res = tree.search(Point(4, 2), include_on_edge = True)
+        self.assertIsNone(res)
 
 if __name__ == '__main__':
     unittest.main()
