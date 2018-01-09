@@ -110,59 +110,6 @@ class RTree(object):
         else:  # self in not leaf and adding child will make overflow
             # try split
             pass
-
-        # if len(node.childs) + 1 > node.max_content_size:
-        #     # #try reinsert 
-        #     # if(node.isReinsert == False):
-        #     #     node.isReinsert = True
-        #     #     # Reinsert algorithm
-        #     #     objects = node.childs + [new_inserted]
-        #     #     idx = []
-        #     #     dist = []
-        #     #     for i in range(len(objects)):
-        #     #         # if isinstance(objects[i],RTree):
-        #     #             # print("Rtreetree masuk ke voronoi")
-        #     #         deltaX = objects[i].center[0] - node.bound.centroid[0]
-        #     #         deltaY = objects[i].center[1] - node.bound.centroid[1]
-        #     #         # Euclidean distance of entry polygon and the node polygon
-        #     #         d = math.sqrt(deltaX * deltaX + deltaY * deltaY)
-        #     #         dist.append(d)
-        #     #         idx.append(i)
-
-        #     #     # sort descending, insertion sort, the object is represented by their index in dist array, dist and objects array is ordered similiarly
-        #     #     for j in range(len(objects)):
-        #     #         idxBig = 0
-        #     #         for k in range(j + 1, len(objects)):
-        #     #             if (dist[idxBig] < dist[k]):
-        #     #                 idxBig = k
-        #     #         t = idx[idxBig]
-        #     #         idx[idxBig] = idx[j]
-        #     #         idx[j] = t
-        #     #     selected_to_remove = objects[0]
-        #     #     node.childs = objects
-        #     #     node.childs.remove(selected_to_remove)
-        #     #     node.rebound_border()
-        #     #     root_node = node
-
-        #     #     while root_node.parent is not None:
-        #     #         root_node = root_node.parent
-
-        #     #     selected_reinsert_node = RTree.choose_leaf(root_node, selected_to_remove)
-        #     #     selected_reinsert_node.insert(selected_to_remove)
-        #     # else:
-        #     #     # Splitting
-        #     #     # print("Split")
-        #     #     node.childs = list(node.split(new_inserted))
-        #     #     node.rebound_upward()
-            
-        #     #########
-        #     # Splitting
-        #     # print("Split")
-        #     node.childs = list(node.split(new_inserted))
-        #     node.rebound_upward()
-        # else:
-        #     node.childs.append(new_inserted)
-        #     node.bound = RTree.update_bound(node,new_inserted)
     
     def _find_furthest_2(self):
         pass
