@@ -3,11 +3,11 @@ This file define how my TA gain it's input
 '''
 
 import pickle
-from model import Point, Voronoi
+from model import Voronoi
 
 def clean_input(address='voronoi.input'):
     """
-    clean input file from empty lines
+    clean input file from empty lines, remove "enter"
     """
     file_input = open(address, 'r')
     file_output = open(address+".out", 'w')
@@ -15,7 +15,6 @@ def clean_input(address='voronoi.input'):
     for line in file_input:
         if line not in ('', ' ', '\n'):
             file_output.write(line)
-
 
 def read_input(address='voronoi.input'):
     """
@@ -30,25 +29,21 @@ def read_input(address='voronoi.input'):
 
     current_region = ''
     points = list()
-    voronoi_list = list()
 
     for line in file_input:
         data = line.split(',')
 
         if current_region != data[0]:
-           print ('read region:', data[0])
-           if len(points) > 0:
-                voronoi_list.append(Voronoi(current_region, points))
+            if points:
+                yield Voronoi(current_region, points)
             
-           points = list()
+            points = list()
 
         current_region = data[0]
         points.append((float(data[1]), float(data[2])))
     
-    if len(points) > 0:
-        voronoi_list.append(Voronoi(current_region, points))
-
-    return voronoi_list
+    if points:
+        yield Voronoi(current_region, points)
 
 def store_processed_input(voronoi_list, file_address='processed.in'):
     """
@@ -56,7 +51,6 @@ def store_processed_input(voronoi_list, file_address='processed.in'):
     """
     with open(file_address, 'wb') as output:
         pickle.dump(voronoi_list, output, pickle.HIGHEST_PROTOCOL)
-
 
 def get_processed_input(address='processed.in'):
     """
