@@ -89,8 +89,6 @@ class RTree(object):
             self.bound = self.update_bound(self, new_inserted)
             if isinstance(new_inserted, RTree):
                 new_inserted.parent = self
-                print 'type', self
-                self.is_leaf = False
 
         elif not self.is_leaf:
             # look for suitable node
@@ -105,41 +103,53 @@ class RTree(object):
                     (bound_area == selected_bound_area and len(child.childs) < len(selected_child.childs)):
                     selected_child = child
                     selected_bound_area = bound_area
-            
-            print 'self', self, self.is_leaf
-            print 'selected_child', selected_child
-            selected_child.insert(new_inserted, root)
 
+            result = selected_child.insert(new_inserted, root)
+
+            print 'result', result
+            if result:
+                root.inspect_tree()
+                print '[[[[[[[]]]]]]]'
+                self.inspect_tree()
+                print '[[[[[[[]]]]]]]'
+                self.childs.remove(result)
+                self.inspect_tree()
+                for child in result.childs:
+                    self.childs.append(child)
+                    print '[[[[[[[]]]]]]]'
+                    self.inspect_tree()
+                
+                if len(self.childs) > self.max_content_size:
+                    # then try split
+                    first, second = self.split(root)
+                    self.is_leaf = False
+                    self.childs = [first, second] # make current trees child to refer new splitted region
+                    print '[[[[[[[]]]]]]]'
+                    self.inspect_tree()
+                
+                    return self
         else:  # self in not leaf and adding child will make overflow
             # add it first
             self.childs.append(new_inserted)
 
             # then try split
             first, second = self.split(root)            
+            self.is_leaf = False
             self.childs = [first, second] # make current trees child to refer new splitted region
-            if isinstance(first, RTree):
-                self.is_leaf = False
-
-            print("======BEFORE rebound=====")
-            # then rebound upward
-            self.rebound_upward(root)
-            print("======AFTER rebound=====")
+            print '11111'
+            self.inspect_tree()
+            return self  # return self to parent, after split
     
     def split(self, root):
         """
         Do Split based on furthest 2, map the rest into new tree
         """
-        cou = 1
         first, second = self.find_furthest_2()
         new_tree_first = RTree(parent = self)
         new_tree_first.insert(first, root)
-        print 'insert', cou
-        cou += 1
 
         new_tree_second = RTree(parent = self)
         new_tree_second.insert(second, root)
-        print 'insert', cou
-        cou += 1
 
         for child in self.childs:
             if child not in [first, second]:
@@ -147,9 +157,16 @@ class RTree(object):
                     new_tree_first.insert(child, root)
                 else:
                     new_tree_second.insert(child, root)
-                print 'insert', cou
-                cou += 1
-                    
+            print 'inspect 1'
+            new_tree_first.inspect_tree()
+            print 'inspect 2'
+            new_tree_second.inspect_tree()
+        
+        if isinstance(first, RTree):
+            new_tree_first.is_leaf = False
+        if isinstance(second, RTree):
+            new_tree_second.is_leaf = False
+
         return new_tree_first, new_tree_second
 
     def find_furthest_2(self):
