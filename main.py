@@ -56,8 +56,9 @@ def build_tree(voronoi_file_source, should_build_new=False):
 
         start_construct = time.time()
         for voronoi in voronoi_list:
-            print('processing:', voronoi.name)
+            print('processing:', voronoi.name)            
             tree.insert(voronoi)
+            tree.inspectTree()
             
         duration = time.time() - start_construct
         print('Tree Construction Time (ms):', duration * 1000)
@@ -69,15 +70,16 @@ def build_tree(voronoi_file_source, should_build_new=False):
     return tree
 
 if __name__ == '__main__':
-    # FILE_INPUT = 'test/region-15/region-15.input'	
-    FILE_INPUT = 'object/region-08-titik.input'	
-    TREE = build_tree(FILE_INPUT, should_build_new = False)
+    FILE_INPUT = 'test/region-15/region-15.input'	
+    # FILE_INPUT = 'object/region-08-titik.input'	
+    TREE = build_tree(FILE_INPUT, should_build_new = True)
 
     """
     Input query point
     """
-    QUERY_POINT = Point(11.8, 10.8)
+    QUERY_POINT = Point(508, 686)
 
+    print (TREE.find_reg("R254"))
     """
     R-Tree Search
     """
@@ -89,19 +91,19 @@ if __name__ == '__main__':
     else:
         print ('Region Not Found')
     
-    DURATION_TREE_SEARCH = time.time() - START_TREE_SEARCH    
-    print ('Waktu Pencarian R-Tree = ', DURATION_TREE_SEARCH * 1000, 'ms')
+    # DURATION_TREE_SEARCH = time.time() - START_TREE_SEARCH    
+    # print ('Waktu Pencarian R-Tree = ', DURATION_TREE_SEARCH * 1000, 'ms')
         
-    """
-    Sequential Search    
-    """
-    START_SEQ_SEARCH = time.time()    
-    VORONOI_LIST = build_seq_voronoi(FILE_INPUT, should_build_new = False)
-    RESULT_SEQ = seq_search(QUERY_POINT, VORONOI_LIST, include_on_edge=True)
-    if RESULT_SEQ:
-        print ('---Region Found:', RESULT_SEQ)
-    else:
-        print ('Region Not Found')
+    # """
+    # Sequential Search    
+    # """
+    # START_SEQ_SEARCH = time.time()    
+    # VORONOI_LIST = build_seq_voronoi(FILE_INPUT, should_build_new = False)
+    # RESULT_SEQ = seq_search(QUERY_POINT, VORONOI_LIST, include_on_edge=True)
+    # if RESULT_SEQ:
+    #     print ('---Region Found:', RESULT_SEQ)
+    # else:
+    #     print ('Region Not Found')
     
-    DURATION_SEQ_SEARCH = time.time() - START_SEQ_SEARCH        
-    print ('Waktu Pencarian Linear = ', DURATION_SEQ_SEARCH * 1000, 'ms')
+    # DURATION_SEQ_SEARCH = time.time() - START_SEQ_SEARCH        
+    # print ('Waktu Pencarian Linear = ', DURATION_SEQ_SEARCH * 1000, 'ms')
