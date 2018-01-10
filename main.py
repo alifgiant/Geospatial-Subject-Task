@@ -36,7 +36,7 @@ def build_seq_voronoi(voronoi_file_source, should_build_new=False):
         
     return all_list
 
-def build_tree(voronoi_file_source, should_build_new=False):
+def build_tree(voronoi_file_source, should_build_new=False, print_tree_building=False):
     """
     build tree either by read new data or read saved data
     """
@@ -58,7 +58,14 @@ def build_tree(voronoi_file_source, should_build_new=False):
         for voronoi in voronoi_list:
             print('processing:', voronoi.name)            
             tree.insert(voronoi)
-            tree.inspectTree()
+            if print_tree_building:
+                print '*********'
+                tree.inspect_tree()
+                print '*********'
+
+        print '*********LATEST********'
+        tree.inspect_tree()
+        print '***********************'
             
         duration = time.time() - start_construct
         print('Tree Construction Time (ms):', duration * 1000)
@@ -70,14 +77,16 @@ def build_tree(voronoi_file_source, should_build_new=False):
     return tree
 
 if __name__ == '__main__':
-    FILE_INPUT = 'test/region-15/region-15.input'	
-    # FILE_INPUT = 'object/region-08-titik.input'	
-    TREE = build_tree(FILE_INPUT, should_build_new = True)
+    # FILE_INPUT = 'test/region-15/region-15.input'	
+    # FILE_INPUT = 'test/region-5/region-5.input'	
+    FILE_INPUT = 'object/region-08-titik.input'	
+    TREE = build_tree(FILE_INPUT, should_build_new=False, print_tree_building=False)
 
     """
     Input query point
     """
-    QUERY_POINT = Point(508, 686)
+    # QUERY_POINT = Point(11, 10)
+    QUERY_POINT = Point(391, 800)
 
     print (TREE.find_reg("R254"))
     """

@@ -33,19 +33,20 @@ class RTree(object):
         if not content:
             content = list()
         for voronoi in content:
-            if isinstance(voronoi, RTree) and not self.is_leaf:
-                self.is_leaf = False
             self.insert(voronoi)
 
-    def inspectTree(self, num = 0):
-        MARKER = '---'
-        print (MARKER*num + self.name)
+    def inspect_tree(self, num = 0):
+        """
+        Inspect Tree
+        """
+        marker = '---'
+        print (marker*num + "Node")
 
         for child in self.childs:
             if isinstance(child, Voronoi):
-                print (MARKER * (num+1) + child.name)
+                print (marker * (num+1) + child.name)  # pylint: disable=E1101
             else:
-                child.inspectTree(num+1)
+                child.inspect_tree(num+1)
 
     def find_reg(self, reg_name):
         """
@@ -74,8 +75,7 @@ class RTree(object):
                 else:
                     result = child.search(query_point, include_on_edge, current_depth + 1)
                     if result:  # if result none, continue check next child, else it has been CATCH
-                        return result
-        
+                        return result        
         return None
 
     def insert(self, new_inserted):
@@ -101,21 +101,39 @@ class RTree(object):
                     (bound_area == selected_bound_area and len(child.childs) < len(selected_child.childs)):
                     selected_child = child
                     selected_bound_area = bound_area
-            
-            selected_child.insert(new_inserted)
 
+            result = selected_child.insert(new_inserted)
+
+            if result:
+                self.childs.remove(result)
+                for child in result.childs:
+                    self.childs.append(child)
+                self.rebound_border()
+
+                if len(self.childs) > self.max_content_size:
+                    # then try split
+                    first, second = self.split()
+                    self.do_split_treatment(first, second)
+
+                    return self  # return self to parent, after split
         else:  # self in not leaf and adding child will make overflow
             # add it first
             self.childs.append(new_inserted)
 
             # then try split
             first, second = self.split()
-            self.is_leaf = False
-            self.childs = [first, second] # make current trees child to refer new splitted region
-            
-            # then rebound upward
-            self.rebound_upward()           
+            self.do_split_treatment(first, second)
+
+            return self  # return self to parent, after split
     
+    def do_split_treatment(self, first, second):   
+        """
+        to tell current node isnt leaf and should rebounding  
+        """
+        self.is_leaf = False
+        self.childs = [first, second] # make current trees child to refer new splitted region
+        self.rebound_border()
+            
     def split(self):
         """
         Do Split based on furthest 2, map the rest into new tree
@@ -133,6 +151,12 @@ class RTree(object):
                     new_tree_first.insert(child)
                 else:
                     new_tree_second.insert(child)
+        
+        if isinstance(first, RTree):
+            new_tree_first.is_leaf = False
+        if isinstance(second, RTree):
+            new_tree_second.is_leaf = False
+
         return new_tree_first, new_tree_second
 
     def find_furthest_2(self):
@@ -155,24 +179,6 @@ class RTree(object):
                     selected_second = voronoi_second
         # return finding
         return selected_first, selected_second
-                
-    def rebound_upward(self):
-        """
-        keep the tree level the same
-        """
-        if self.parent is not None:
-            self.parent.childs.remove(self)
-
-            for child in self.childs:
-                # add self child to parent
-                self.parent.insert(child)
-
-            # if len(self.parent.childs) > self.parent.max_content_size:
-            #     self.parent.childs = list(self.parent.split())
-            #     self.parent.rebound_upward()
-
-            # if self.parent:  # make sure parent is not deleted yet
-            #     self.parent.rebound_border()  # make sure border size is correct            
 
     def rebound_border(self):
         """
