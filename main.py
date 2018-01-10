@@ -56,8 +56,11 @@ def build_tree(voronoi_file_source, should_build_new=False):
 
         start_construct = time.time()
         for voronoi in voronoi_list:
-            print('processing:', voronoi.name)
-            tree.insert(voronoi)
+            print('processing:', voronoi.name)            
+            tree.insert(voronoi, tree)
+            print '*********'
+            tree.inspect_tree()
+            print '*********'
             
         duration = time.time() - start_construct
         print('Tree Construction Time (ms):', duration * 1000)
@@ -69,9 +72,10 @@ def build_tree(voronoi_file_source, should_build_new=False):
     return tree
 
 if __name__ == '__main__':
-    # FILE_INPUT = 'test/region-15/region-15.input'	
-    FILE_INPUT = 'object/region-08-titik.input'	
-    TREE = build_tree(FILE_INPUT, should_build_new = False)
+    FILE_INPUT = 'test/region-15/region-15.input'	
+    # FILE_INPUT = 'test/region-5/region-5.input'	
+    # FILE_INPUT = 'object/region-08-titik.input'	
+    TREE = build_tree(FILE_INPUT, should_build_new = True)
 
     """
     Input query point

@@ -1,7 +1,16 @@
-from model import Voronoi, RTree, Point
+"""
+Unit Test file for moodel
+"""
 import unittest
+from model import Voronoi, RTree, Point
+
+def do_inspect(tree):
+    tree.inspect_tree()
 
 class TestVoronoi(unittest.TestCase):
+    """
+    Test Case for Voronoi object
+    """
     def test_voronoi_creation(self):
         points = [(1, 1), (3, 1), (3, 3), (1, 3)]
         voronoi = Voronoi("poly_a", points)
@@ -50,29 +59,39 @@ class TestRTree(unittest.TestCase):
         polygon_b = Voronoi("poly_b", [(1, 3), (1, 1), (3, 1), (3, 3)])
         polygon_c = Voronoi("poly_c", [(8, 4), (8, 3), (9, 3), (9, 4)])
         polygon_d = Voronoi("poly_d", [(9, 4), (9, 3), (10, 4)])
-        polygon_e = Voronoi("poly_4", [(10, 4), (9, 3), (10, 3)])
+        polygon_e = Voronoi("poly_e", [(10, 4), (9, 3), (10, 3)])
         
+        print ''
         grand_child1 = RTree(content = [polygon_a])
+        # do_inspect(grand_child1)
+        
         grand_child2 = RTree(content = [polygon_b])
+        # do_inspect(grand_child2)
+
         child1 = RTree(content = [grand_child1, grand_child2])
+        # do_inspect(child1)
+        
         child1.is_leaf = False        
-        grand_child1.parent = child1
-        grand_child2.parent = child1
         
         child2 = RTree(content = [polygon_c])
+        # do_inspect(child2)
+        
         child3 = RTree(content = [polygon_d])
+        # do_inspect(child3)
+
         child4 = RTree(content = [polygon_e])
+        # do_inspect(child4)
                 
         root = RTree(content = [child1, child2, child3, child4])
+        do_inspect(root)
+
         root.is_leaf = False
 
-        child1.parent = root
-        child2.parent = root
-        child3.parent = root
-        child4.parent = root
-
-        child1.rebound_upward()
+        print '======'
+        child1.rebound_upward(root)
+        do_inspect(root)
         
+        print ''
         self.assertEqual(2, len(root.childs))
 
     def test_rebound_border(self):         
