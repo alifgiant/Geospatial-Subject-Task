@@ -79,14 +79,14 @@ def build_tree(voronoi_file_source, should_build_new=False, print_tree_building=
 if __name__ == '__main__':
     # FILE_INPUT = 'test/region-15/region-15.input'	
     # FILE_INPUT = 'test/region-5/region-5.input'	
-    FILE_INPUT = 'object/region-08-titik.input'	
+    FILE_INPUT = 'object/region-09-titik.input'	
     TREE = build_tree(FILE_INPUT, should_build_new=False, print_tree_building=False)
 
     """
     Input query point
     """
     # QUERY_POINT = Point(11, 10)
-    QUERY_POINT = Point(690, 170)    
+    QUERY_POINT = Point(560, 430)    
 
     """
     R-Tree Search
