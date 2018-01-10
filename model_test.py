@@ -51,49 +51,6 @@ class TestRTree(unittest.TestCase):
         self.assertEqual(root, first.parent)
         self.assertEqual(root, second.parent)
     
-    def test_rebound_upward(self):
-        """
-        Make rebound upward, move current element to its parent
-        """
-        polygon_a = Voronoi("poly_a", [(1, 4), (1, 3), (3, 3), (3, 4)])
-        polygon_b = Voronoi("poly_b", [(1, 3), (1, 1), (3, 1), (3, 3)])
-        polygon_c = Voronoi("poly_c", [(8, 4), (8, 3), (9, 3), (9, 4)])
-        polygon_d = Voronoi("poly_d", [(9, 4), (9, 3), (10, 4)])
-        polygon_e = Voronoi("poly_e", [(10, 4), (9, 3), (10, 3)])
-        
-        print ''
-        grand_child1 = RTree(content = [polygon_a])
-        # do_inspect(grand_child1)
-        
-        grand_child2 = RTree(content = [polygon_b])
-        # do_inspect(grand_child2)
-
-        child1 = RTree(content = [grand_child1, grand_child2])
-        # do_inspect(child1)
-        
-        child1.is_leaf = False        
-        
-        child2 = RTree(content = [polygon_c])
-        # do_inspect(child2)
-        
-        child3 = RTree(content = [polygon_d])
-        # do_inspect(child3)
-
-        child4 = RTree(content = [polygon_e])
-        # do_inspect(child4)
-                
-        root = RTree(content = [child1, child2, child3, child4])
-        do_inspect(root)
-
-        root.is_leaf = False
-
-        print '======'
-        child1.rebound_upward(root)
-        do_inspect(root)
-        
-        print ''
-        self.assertEqual(2, len(root.childs))
-
     def test_rebound_border(self):         
         """
         Make rebound border, recreate MBR

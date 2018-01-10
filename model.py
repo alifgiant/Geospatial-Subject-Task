@@ -32,9 +32,7 @@ class RTree(object):
         if not content:
             content = list()
         for voronoi in content:
-            if isinstance(voronoi, RTree) and not self.is_leaf:
-                self.is_leaf = False
-            self.insert(voronoi, self)
+            self.insert(voronoi)
 
     def inspect_tree(self, num = 0):
         """
@@ -76,11 +74,10 @@ class RTree(object):
                 else:
                     result = child.search(query_point, include_on_edge, current_depth + 1)
                     if result:  # if result none, continue check next child, else it has been CATCH
-                        return result
-        
+                        return result        
         return None
 
-    def insert(self, new_inserted, root):
+    def insert(self, new_inserted):
         """
         Main Process of RTree, node insertion
         """
@@ -89,8 +86,6 @@ class RTree(object):
             self.bound = self.update_bound(self, new_inserted)
             if isinstance(new_inserted, RTree):
                 new_inserted.parent = self
-                print 'type', self
-                self.is_leaf = False
 
         elif not self.is_leaf:
             # look for suitable node
@@ -105,51 +100,62 @@ class RTree(object):
                     (bound_area == selected_bound_area and len(child.childs) < len(selected_child.childs)):
                     selected_child = child
                     selected_bound_area = bound_area
-            
-            print 'self', self, self.is_leaf
-            print 'selected_child', selected_child
-            selected_child.insert(new_inserted, root)
 
+            result = selected_child.insert(new_inserted)
+
+            if result:
+                self.childs.remove(result)
+                for child in result.childs:
+                    self.childs.append(child)
+                self.rebound_border()
+
+                if len(self.childs) > self.max_content_size:
+                    # then try split
+                    first, second = self.split()
+                    self.do_split_treatment(first, second)
+
+                    return self  # return self to parent, after split
         else:  # self in not leaf and adding child will make overflow
             # add it first
             self.childs.append(new_inserted)
 
             # then try split
-            first, second = self.split(root)            
-            self.childs = [first, second] # make current trees child to refer new splitted region
-            if isinstance(first, RTree):
-                self.is_leaf = False
+            first, second = self.split()
+            self.do_split_treatment(first, second)
 
-            print("======BEFORE rebound=====")
-            # then rebound upward
-            self.rebound_upward(root)
-            print("======AFTER rebound=====")
+            return self  # return self to parent, after split
     
-    def split(self, root):
+    def do_split_treatment(self, first, second):   
+        """
+        to tell current node isnt leaf and should rebounding  
+        """
+        self.is_leaf = False
+        self.childs = [first, second] # make current trees child to refer new splitted region
+        self.rebound_border()
+            
+    def split(self):
         """
         Do Split based on furthest 2, map the rest into new tree
         """
-        cou = 1
         first, second = self.find_furthest_2()
         new_tree_first = RTree(parent = self)
-        new_tree_first.insert(first, root)
-        print 'insert', cou
-        cou += 1
+        new_tree_first.insert(first)
 
         new_tree_second = RTree(parent = self)
-        new_tree_second.insert(second, root)
-        print 'insert', cou
-        cou += 1
+        new_tree_second.insert(second)
 
         for child in self.childs:
             if child not in [first, second]:
                 if child.bound.centroid.distance(first.bound.centroid) < child.bound.centroid.distance(second.bound.centroid):
-                    new_tree_first.insert(child, root)
+                    new_tree_first.insert(child)
                 else:
-                    new_tree_second.insert(child, root)
-                print 'insert', cou
-                cou += 1
-                    
+                    new_tree_second.insert(child)
+        
+        if isinstance(first, RTree):
+            new_tree_first.is_leaf = False
+        if isinstance(second, RTree):
+            new_tree_second.is_leaf = False
+
         return new_tree_first, new_tree_second
 
     def find_furthest_2(self):
@@ -172,29 +178,6 @@ class RTree(object):
                     selected_second = voronoi_second
         # return finding
         return selected_first, selected_second
-                
-    def rebound_upward(self, root):
-        """
-        keep the tree level the same
-        """
-        if self.parent is not None:
-            self.parent.childs.remove(self)
-
-            for child in self.childs:
-                self.parent.childs.append(child)
-                # add self child to parent
-                print "++++++++"
-                root.inspect_tree()         
-                print "++++++++"
-
-                if isinstance(child, RTree):
-                    child.parent = self.parent
-
-            if len(self.parent.childs) > self.parent.max_content_size:
-                self.parent.childs = list(self.parent.split(root))                
-
-                if self.parent:  # make sure parent is not deleted yet
-                    self.parent.rebound_border()  # make sure border size is correct   
 
     def rebound_border(self):
         """
