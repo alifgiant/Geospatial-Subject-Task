@@ -86,9 +86,8 @@ if __name__ == '__main__':
     Input query point
     """
     # QUERY_POINT = Point(11, 10)
-    QUERY_POINT = Point(391, 800)
+    QUERY_POINT = Point(690, 170)    
 
-    print (TREE.find_reg("R254"))
     """
     R-Tree Search
     """
@@ -100,19 +99,19 @@ if __name__ == '__main__':
     else:
         print ('Region Not Found')
     
-    # DURATION_TREE_SEARCH = time.time() - START_TREE_SEARCH    
-    # print ('Waktu Pencarian R-Tree = ', DURATION_TREE_SEARCH * 1000, 'ms')
+    DURATION_TREE_SEARCH = time.time() - START_TREE_SEARCH    
+    print ('Waktu Pencarian R-Tree = ', DURATION_TREE_SEARCH * 1000, 'ms')
         
-    # """
-    # Sequential Search    
-    # """
-    # START_SEQ_SEARCH = time.time()    
-    # VORONOI_LIST = build_seq_voronoi(FILE_INPUT, should_build_new = False)
-    # RESULT_SEQ = seq_search(QUERY_POINT, VORONOI_LIST, include_on_edge=True)
-    # if RESULT_SEQ:
-    #     print ('---Region Found:', RESULT_SEQ)
-    # else:
-    #     print ('Region Not Found')
+    """
+    Sequential Search    
+    """
+    START_SEQ_SEARCH = time.time()    
+    VORONOI_LIST = build_seq_voronoi(FILE_INPUT, should_build_new = False)
+    RESULT_SEQ = seq_search(QUERY_POINT, VORONOI_LIST, include_on_edge=True)
+    if RESULT_SEQ:
+        print ('---Region Found:', RESULT_SEQ)
+    else:
+        print ('Region Not Found')
     
-    # DURATION_SEQ_SEARCH = time.time() - START_SEQ_SEARCH        
-    # print ('Waktu Pencarian Linear = ', DURATION_SEQ_SEARCH * 1000, 'ms')
+    DURATION_SEQ_SEARCH = time.time() - START_SEQ_SEARCH        
+    print ('Waktu Pencarian Linear = ', DURATION_SEQ_SEARCH * 1000, 'ms')
