@@ -145,13 +145,19 @@ class RTree(object):
         new_tree_second = RTree(parent = self, name=self.name+'-'+second.name)
         new_tree_second.insert(second)
 
+        self.childs.remove(first)
+        self.childs.remove(second)
+
         for child in self.childs:
-            if child not in [first, second]:
-                if child.bound.centroid.distance(first.bound.centroid) < child.bound.centroid.distance(second.bound.centroid):
-                    new_tree_first.insert(child)
-                else:
-                    new_tree_second.insert(child)
+            # if child not in [first, second]:
+            if (child != self.childs[-1] and child.bound.centroid.distance(first.bound.centroid) < child.bound.centroid.distance(second.bound.centroid)) \
+                or (child != self.childs[-1] and len(new_tree_first.childs) < 2):                
+                new_tree_first.insert(child)
+            else:                                        
+                new_tree_second.insert(child)
         
+        # print('split res:', len(new_tree_first.childs), len(new_tree_second.childs))
+
         if isinstance(first, RTree):
             new_tree_first.is_leaf = False
         if isinstance(second, RTree):
@@ -161,7 +167,7 @@ class RTree(object):
 
     def find_furthest_2(self):
         """
-        Pick furtest 2 MBR currently holded by tree
+        Pick furthest 2 MBR currently holded by tree
         """
         selected_first = None
         selected_second = None

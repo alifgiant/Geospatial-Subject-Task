@@ -59,13 +59,13 @@ def build_tree(voronoi_file_source, should_build_new=False, print_tree_building=
             print('processing:', voronoi.name)            
             tree.insert(voronoi)
             if print_tree_building:
-                print '*********'
+                print ('*********')
                 tree.inspect_tree()
-                print '*********'
+                print ('*********')
 
-        print '*********LATEST********'
+        print ('*********LATEST********')
         tree.inspect_tree()
-        print '***********************'
+        print ('***********************')
             
         duration = time.time() - start_construct
         print('Tree Construction Time (ms):', duration * 1000)
@@ -79,14 +79,18 @@ def build_tree(voronoi_file_source, should_build_new=False, print_tree_building=
 if __name__ == '__main__':
     # FILE_INPUT = 'test/region-15/region-15.input'	
     # FILE_INPUT = 'test/region-5/region-5.input'	
-    FILE_INPUT = 'object/region-09-titik.input'	
+    FILE_INPUT = 'object/region-10-titik.input'	
     TREE = build_tree(FILE_INPUT, should_build_new=False, print_tree_building=False)
 
     """
     Input query point
     """
     # QUERY_POINT = Point(11, 10)
-    QUERY_POINT = Point(560, 430)    
+    QUERY_POINT = Point(503, 573)    
+    # QUERY_POINT = Point(100, 68)
+    # QUERY_POINT = Point(508, 686)  #Jadi yang ini
+    # QUERY_POINT = Point(818, 411)
+      
 
     """
     R-Tree Search
